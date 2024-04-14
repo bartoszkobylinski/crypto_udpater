@@ -63,7 +63,7 @@ def update_notion_price(notion_token, database_id, target_ticker, price):
 
 api_key = os.getenv("BINANCE_API_KEY")
 notion_token = os.getenv("CRYPTO_PRICE_UPDATER_NOTION")
-database_id = os.getenv("NOTION_DATABASE_API")
+database_id = os.getenv("NOTION_CRYPTO_DATABASE_API")
 
 tickers = ['MDT', 'OGN', 'BEAMX']
 
