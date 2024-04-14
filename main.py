@@ -1,3 +1,4 @@
+import datetime
 import os
 import requests
 import logging
@@ -31,9 +32,11 @@ def update_notion_price(notion_token, database_id, target_ticker, price):
             database_id=database_id,
             filter={"property": "Ticker", "rich_text": {"equals": target_ticker}}
         )
-
+        print(query_response)
         green_select_up = {'id': '82d04a47-0903-4726-8469-c0aa3b815746', 'name': 'up', 'color': 'green'}
         red_select_down = {'id': '0e911ead-f479-498a-a471-a1fe399a103f', 'name': 'down', 'color': 'red'}
+
+        current_time = datetime.datetime.utcnow().isoformat() + 'Z'
 
         for page in query_response['results']:
             ticker_text = page['properties']['Ticker']['rich_text'][0]['plain_text']
@@ -47,11 +50,12 @@ def update_notion_price(notion_token, database_id, target_ticker, price):
                     page_id=page_id,
                     properties={
                         "Current Price": {"number": price},
-                        "up": {"select": up_select}
+                        "up": {"select": up_select},
+                        "Last update": {"last_edited_time": current_time}
                     }
                 )
                 logging.info(
-                    f"Ticker: {target_ticker} | Price: ${price} | Current Value: ${current_value} | Initial Value: ${initial_investment}")
+                    f"Ticker: {target_ticker} | Price: ${price} | Current Value: ${current_value} | Initial Value: ${initial_investment} | Last Updated: {current_time}")
 
                 return
         logging.warning(f"No exact match found for ticker {target_ticker}")
