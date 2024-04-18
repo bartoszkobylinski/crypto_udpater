@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 
-import os
 import requests
+from selenium import webdriver
+from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+import time
+import os
 import logging
 from notion_client import Client
 
@@ -12,6 +18,27 @@ loggers = ['requests', 'notion_client']
 for logger_name in loggers:
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.WARNING)
+
+
+def get_stock_price(ticker):
+    url_nas = 'https://live.euronext.com/en/product/equities/no0010196140-xosl'
+    url_nom = 'https://live.euronext.com/en/product/equities/NO0013162693-XOAS'
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    if ticker == "NAS":
+        driver.get(url_nas)
+    else:
+        driver.get(url_nom)
+    time.sleep(5)
+    try:
+        price_element = driver.find_element(By.ID, 'header-instrument-price')
+        if price_element:
+            return round(float(price_element.text), 3)
+    except Exception as exception:
+        logging.error(f"During fetch a price element from the website an error occurred. Exception: {exception}")
+        return None
 
 
 def get_price(api_key, ticker):
@@ -44,7 +71,6 @@ def update_notion_price(notion_token, database_id, target_ticker, price):
                 initial_investment = page['properties']['Initial Investment']['formula']['number']
                 current_value = page['properties']['Current Value']['formula']['number']
                 up_select = green_select_up if current_value > initial_investment else red_select_down
-
                 notion.pages.update(
                     page_id=page_id,
                     properties={
@@ -67,11 +93,15 @@ api_key = os.getenv("BINANCE_API_KEY")
 notion_token = os.getenv("CRYPTO_PRICE_UPDATER_NOTION")
 database_id = os.getenv("NOTION_CRYPTO_DATABASE_API")
 
-tickers = ['MDT', 'OGN', 'BEAMX']
+tickers = ['MDT', 'OGN', 'BEAMX', 'NAS', 'NOM']
 
 for ticker in tickers:
-    price = get_price(api_key, ticker)
+    if ticker == 'NAS' or ticker == 'NOM':
+        price = get_stock_price(ticker)
+    else:
+        price = get_price(api_key, ticker)
     if price is not None:
         update_notion_price(notion_token, database_id, ticker, price)
     else:
         logging.info(f"Could not fetch price for {ticker}, skipping Notion update.")
+
