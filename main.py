@@ -21,24 +21,31 @@ for logger_name in loggers:
 
 
 def get_stock_price(ticker):
-    url_nas = 'https://live.euronext.com/en/product/equities/no0010196140-xosl'
-    url_nom = 'https://live.euronext.com/en/product/equities/NO0013162693-XOAS'
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-    if ticker == "NAS":
-        driver.get(url_nas)
-    else:
-        driver.get(url_nom)
-    time.sleep(5)
+    driver = None
     try:
-        price_element = driver.find_element(By.ID, 'header-instrument-price')
-        if price_element:
-            return round(float(price_element.text), 3)
+        url_nas = 'https://live.euronext.com/en/product/equities/no0010196140-xosl'
+        url_nom = 'https://live.euronext.com/en/product/equities/NO0013162693-XOAS'
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        if ticker == "NAS":
+            driver.get(url_nas)
+        else:
+            driver.get(url_nom)
+        time.sleep(5)
+        try:
+            price_element = driver.find_element(By.ID, 'header-instrument-price')
+            if price_element:
+                return round(float(price_element.text), 3)
+        except Exception as exception:
+            logging.error(f"During fetch a price element from the website an error occurred. Exception: {exception}")
+            return None
     except Exception as exception:
-        logging.error(f"During fetch a price element from the website an error occurred. Exception: {exception}")
-        return None
+        logging.error(f"An error with driver occurred: {exception}")
+    finally:
+        if driver:
+            driver.quit()
 
 
 def get_price(api_key, ticker):
@@ -93,7 +100,7 @@ api_key = os.getenv("BINANCE_API_KEY")
 notion_token = os.getenv("CRYPTO_PRICE_UPDATER_NOTION")
 database_id = os.getenv("NOTION_CRYPTO_DATABASE_API")
 
-tickers = ['MDT', 'OGN', 'BEAMX', 'NAS', 'NOM']
+tickers = ['MDT', 'OGN', 'NAS', 'NOM']
 
 for ticker in tickers:
     if ticker == 'NAS' or ticker == 'NOM':
