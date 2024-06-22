@@ -37,11 +37,4 @@ def send_daily_message():
         print("No more links to send.")
 
 
-def is_time_to_send():
-    ny_tz = pytz.timezone('America/New_York')
-    now = datetime.datetime.now(ny_tz)
-    if now.hour in [11, 18]:
-        send_daily_message()
-
-
-is_time_to_send()
+send_daily_message()
